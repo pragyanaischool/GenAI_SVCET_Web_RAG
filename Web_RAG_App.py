@@ -14,7 +14,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.utilities import SerpAPIWrapper
 from langchain_core.documents import Document
 import time
-
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 # Load environment variables for local development (will be ignored by Streamlit Cloud)
 load_dotenv()
 
