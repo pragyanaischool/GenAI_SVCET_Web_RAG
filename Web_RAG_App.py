@@ -67,7 +67,7 @@ st.header("Chat with the Web")
 # Initialize the language model
 # Check if the API keys are available before initializing the model
 if groq_api_key and os.environ.get("SERPAPI_API_KEY"):
-    llm = ChatGroq(groq_api_key=groq_api_key, model_name="Llama3-8b-8192")
+    llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.3-70b-versatile")
 
     # Create the prompt template
     prompt_template = ChatPromptTemplate.from_template(
