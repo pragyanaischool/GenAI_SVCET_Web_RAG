@@ -9,7 +9,7 @@ langchain-huggingface
 faiss-cpu
 requests
 beautifulsoup4
-transformers==4.36.2
+transformers
 google-search-results
 sentence-transformers
 torchvision
