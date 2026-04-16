@@ -98,13 +98,16 @@ if groq_api_key and os.environ.get("SERPAPI_API_KEY"):
             # --- Part 1: Get answer from the website context ---
             with st.spinner("Analyzing website content..."):
                 website_retriever = st.session_state.vector.as_retriever()
-                docs = website_retriever.get_relevant_documents(prompt_input)
-                context = "\n\n".join([doc.page_content for doc in docs])
-                chain = prompt_template | llm | StrOutputParser()
-                website_answer = chain.invoke({
+                docs = website_retriever.invoke(prompt_input)
+                if docs:
+                    context = "\n\n".join([doc.page_content for doc in docs[:5]])
+                    chain = prompt_template | llm | StrOutputParser()
+                    website_answer = chain.invoke({
                         "context": context,
                         "input": prompt_input
-                })
+                    })
+                else:
+                    website_answer = "No relevant information found in website."
                 #website_retriever = st.session_state.vector.as_retriever()
                 #website_chain = create_retrieval_chain(website_retriever, create_stuff_documents_chain(llm, prompt_template))
                 #response_website = website_chain.invoke({"input": prompt_input})
