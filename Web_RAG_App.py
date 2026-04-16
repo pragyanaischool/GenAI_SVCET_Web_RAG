@@ -131,13 +131,21 @@ if groq_api_key and os.environ.get("SERPAPI_API_KEY"):
                         google_docs, st.session_state.embeddings
                     )
                     google_retriever = google_vector_store.as_retriever()
-                    docs = google_retriever.get_relevant_documents(prompt_input)
-                    context = "\n\n".join([doc.page_content for doc in docs])
-                    chain = prompt_template | llm | StrOutputParser()
-                    google_answer = chain.invoke({
-                        "context": context,
-                        "input": prompt_input
-                    })
+                
+                    docs = google_retriever.invoke(prompt_input)
+                
+                    if docs:
+                        context = "\n\n".join([doc.page_content for doc in docs[:5]])
+                
+                        chain = prompt_template | llm | StrOutputParser()
+                
+                        google_answer = chain.invoke({
+                            "context": context,
+                            "input": prompt_input
+                        })
+                
+                        if reference_links:
+                            google_answer += "\n\n🔗 Sources:\n" + "\n".join(reference_links[:5])
                # google_answer = "Could not find relevant information from Google search."
                # if google_docs:
                #     google_vector_store = FAISS.from_documents(google_docs, st.session_state.embeddings)
