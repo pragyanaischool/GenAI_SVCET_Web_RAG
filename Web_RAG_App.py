@@ -5,8 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from langchain_groq import ChatGroq
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from langchain.chains import create_retrieval_chain
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import WebBaseLoader
@@ -98,9 +98,17 @@ if groq_api_key and os.environ.get("SERPAPI_API_KEY"):
             # --- Part 1: Get answer from the website context ---
             with st.spinner("Analyzing website content..."):
                 website_retriever = st.session_state.vector.as_retriever()
-                website_chain = create_retrieval_chain(website_retriever, create_stuff_documents_chain(llm, prompt_template))
-                response_website = website_chain.invoke({"input": prompt_input})
-                website_answer = response_website['answer']
+                docs = website_retriever.get_relevant_documents(prompt_input)
+                context = "\n\n".join([doc.page_content for doc in docs])
+                chain = prompt_template | llm | StrOutputParser()
+                website_answer = chain.invoke({
+                        "context": context,
+                        "input": prompt_input
+                })
+                #website_retriever = st.session_state.vector.as_retriever()
+                #website_chain = create_retrieval_chain(website_retriever, create_stuff_documents_chain(llm, prompt_template))
+                #response_website = website_chain.invoke({"input": prompt_input})
+                #website_answer = response_website['answer']
 
             # --- Part 2: Get answer from Google Search ---
             with st.spinner("Searching Google and analyzing results..."):
@@ -114,14 +122,26 @@ if groq_api_key and os.environ.get("SERPAPI_API_KEY"):
                         google_docs.append(Document(page_content=result.get("snippet", ""), metadata={"source": result.get("link", "")}))
                         if result.get("link"):
                             reference_links.append(f"- [{result.get('title', 'Source')}]({result.get('link')})")
-
                 google_answer = "Could not find relevant information from Google search."
                 if google_docs:
-                    google_vector_store = FAISS.from_documents(google_docs, st.session_state.embeddings)
+                    google_vector_store = FAISS.from_documents(
+                        google_docs, st.session_state.embeddings
+                    )
                     google_retriever = google_vector_store.as_retriever()
-                    google_chain = create_retrieval_chain(google_retriever, create_stuff_documents_chain(llm, prompt_template))
-                    response_google = google_chain.invoke({"input": prompt_input})
-                    google_answer = response_google['answer']
+                    docs = google_retriever.get_relevant_documents(prompt_input)
+                    context = "\n\n".join([doc.page_content for doc in docs])
+                    chain = prompt_template | llm | StrOutputParser()
+                    google_answer = chain.invoke({
+                        "context": context,
+                        "input": prompt_input
+                    })
+               # google_answer = "Could not find relevant information from Google search."
+               # if google_docs:
+               #     google_vector_store = FAISS.from_documents(google_docs, st.session_state.embeddings)
+               #     google_retriever = google_vector_store.as_retriever()
+               #     google_chain = create_retrieval_chain(google_retriever, create_stuff_documents_chain(llm, prompt_template))
+               #     response_google = google_chain.invoke({"input": prompt_input})
+               #     google_answer = response_google['answer']
 
             # --- Part 3: Display combined results ---
             with st.chat_message("assistant"):
